@@ -7,6 +7,8 @@ import type { ApiKeys } from './settings-storage';
 
 export type BriefingStage = 'searching' | 'synthesizing';
 
+const MAX_SOURCES_FOR_MODEL = 5;
+
 export class NoRecentNewsError extends Error {
   constructor() {
     super(
@@ -24,7 +26,7 @@ export async function generateBriefing(
 
   onStage('searching');
   const results = await searchTavily(meta.target, keys.tavily, window.daysBack);
-  const sources = buildSources(results, window);
+  const sources = buildSources(results, window).slice(0, MAX_SOURCES_FOR_MODEL);
   if (sources.length === 0) {
     throw new NoRecentNewsError();
   }
@@ -39,9 +41,6 @@ export async function generateBriefing(
     userPayload: buildUserPayload({
       target: meta.target,
       meetingType: meta.meetingType,
-      meetingDate: toDateKey(meta.meetingAt),
-      todayKey: toDateKey(window.endDate),
-      windowStartKey: window.startKey,
       sources: sources.map((source) => ({
         ...source,
         content: contentByUrl.get(source.url) ?? '',
@@ -60,8 +59,20 @@ export function describeGenerationError(error: unknown): { title: string; descri
     return { title: 'Tavily search failed', description: error.message };
   }
   if (error instanceof BifrostError) {
+    if (error.status === 401) {
+      return { title: 'Bifrost Virtual Key rejected', description: error.message };
+    }
+    if (error.status === 402) {
+      return { title: 'Virtual Key credit limit reached', description: error.message };
+    }
+    if (error.status === 429) {
+      return { title: 'Rate limit exceeded', description: error.message };
+    }
+    if (error.status !== null && error.status >= 500) {
+      return { title: 'AI Model Service Unavailable', description: error.message };
+    }
     return {
-      title: error.status === 401 ? 'Bifrost Virtual Key rejected' : 'Synthesis failed',
+      title: 'Synthesis failed',
       description: error.message,
     };
   }

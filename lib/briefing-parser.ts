@@ -17,28 +17,43 @@ const rawDevelopmentSchema = z.object({
   title: z.string().nullish(),
   detail: z.string().nullish(),
   source_url: z.string().nullish(),
+  url: z.string().nullish(),
+  u: z.string().nullish(),
+  source_id: z.union([z.number(), z.string()]).nullish(),
+  id: z.union([z.number(), z.string()]).nullish(),
   source_title: z.string().nullish(),
 });
 
 const rawBriefingSchema = z.object({
-  executive_summary: z.string(),
+  executive_summary: z.string().optional(),
+  summary: z.string().optional(),
   recent_developments: z.array(z.unknown()).nullish(),
+  developments: z.array(z.unknown()).nullish(),
   useful_discussion_points: z.array(z.unknown()).nullish(),
+  discussion_points: z.array(z.unknown()).nullish(),
   open_questions: z.array(z.unknown()).nullish(),
   confidence_score: z.string().nullish(),
+  confidence: z.string().nullish(),
 });
 
 function extractJsonObject(text: string): unknown {
-  const cleaned = text.replace(/```(?:json)?/gi, '');
-  const start = cleaned.indexOf('{');
-  const end = cleaned.lastIndexOf('}');
-  if (start === -1 || end <= start) {
-    throw new BriefingParseError('The AI response did not contain a briefing.');
-  }
+  const cleaned = text.replace(/```(?:json)?/gi, '').trim();
+
+  // Try direct parse first
   try {
-    return JSON.parse(cleaned.slice(start, end + 1));
+    return JSON.parse(cleaned);
   } catch {
-    throw new BriefingParseError('The AI response could not be read as a briefing.');
+    // Fallback to substring bracket extraction
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    if (start === -1 || end <= start) {
+      throw new BriefingParseError('The AI response did not contain a briefing.');
+    }
+    try {
+      return JSON.parse(cleaned.slice(start, end + 1));
+    } catch {
+      throw new BriefingParseError('The AI response could not be read as a briefing.');
+    }
   }
 }
 
@@ -58,7 +73,11 @@ function normalizeCategory(value: string | null | undefined): DevelopmentCategor
 }
 
 function normalizeUrl(url: string): string {
-  return url.trim().replace(/\/+$/, '').toLowerCase();
+  return url
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\/(www\.)?/, '')
+    .replace(/\/+$/, '');
 }
 
 function hostnameOf(url: string): string {
@@ -78,8 +97,19 @@ function parseDevelopments(
     const parsed = rawDevelopmentSchema.safeParse(value);
     if (!parsed.success || !parsed.data.title?.trim()) return [];
 
-    const sourceUrl = parsed.data.source_url?.trim() ?? '';
-    const source = sources.find((item) => normalizeUrl(item.url) === normalizeUrl(sourceUrl));
+    const rawUrl = parsed.data.source_url?.trim() || parsed.data.url?.trim() || parsed.data.u?.trim() || '';
+    const rawId = parsed.data.source_id ?? parsed.data.id;
+
+    // Match source by ID first, then fallback to normalized URL comparison
+    let source: Source | undefined;
+    if (rawId !== null && rawId !== undefined) {
+      const numId = Number(rawId);
+      source = sources.find((item) => item.id === numId);
+    }
+    if (!source && rawUrl) {
+      source = sources.find((item) => normalizeUrl(item.url) === normalizeUrl(rawUrl));
+    }
+
     const verifiedDate =
       source && isWithinWindow(source.publishedDate, window) ? source.publishedDate : null;
 
@@ -89,8 +119,9 @@ function parseDevelopments(
         category: normalizeCategory(parsed.data.category),
         title: parsed.data.title.trim(),
         detail: parsed.data.detail?.trim() ?? '',
-        sourceUrl: source?.url ?? sourceUrl,
-        sourceTitle: parsed.data.source_title?.trim() || (source ? source.title : hostnameOf(sourceUrl)),
+        sourceUrl: source?.url ?? rawUrl,
+        sourceTitle:
+          parsed.data.source_title?.trim() || (source ? source.title : hostnameOf(rawUrl)),
       },
     ];
   });
@@ -111,19 +142,28 @@ function normalizeConfidence(value: string | null | undefined, verifiedCount: nu
 
 export function parseBriefing(content: string, sources: Source[], window: ResearchWindow): Briefing {
   const parsed = rawBriefingSchema.safeParse(extractJsonObject(content));
-  if (!parsed.success || !parsed.data.executive_summary.trim()) {
+  if (!parsed.success) {
+    throw new BriefingParseError('The AI response structure was invalid.');
+  }
+
+  const executiveSummary = (parsed.data.executive_summary || parsed.data.summary || '').trim();
+  if (!executiveSummary) {
     throw new BriefingParseError('The AI response was missing the executive summary.');
   }
 
-  const developments = parseDevelopments(parsed.data.recent_developments, sources, window);
+  const rawDevs = parsed.data.recent_developments ?? parsed.data.developments;
+  const rawDiscussion = parsed.data.useful_discussion_points ?? parsed.data.discussion_points;
+  const rawConfidence = parsed.data.confidence_score ?? parsed.data.confidence;
+
+  const developments = parseDevelopments(rawDevs, sources, window);
   const verifiedCount = developments.filter((item) => item.date !== null).length;
 
   return {
-    executiveSummary: parsed.data.executive_summary.trim(),
+    executiveSummary,
     developments,
-    discussionPoints: cleanStrings(parsed.data.useful_discussion_points, 3),
+    discussionPoints: cleanStrings(rawDiscussion, 3),
     openQuestions: cleanStrings(parsed.data.open_questions, 5),
-    confidence: normalizeConfidence(parsed.data.confidence_score, verifiedCount),
+    confidence: normalizeConfidence(rawConfidence, verifiedCount),
     sources,
   };
 }

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { supabase } from './supabase';
+import { getSupabase } from './supabase';
 import {
   DEVELOPMENT_CATEGORIES,
   MEETING_TYPES,
@@ -44,7 +44,7 @@ const rowSchema = z.object({
 });
 
 export async function saveBriefing(meta: BriefingMeta, briefing: Briefing): Promise<void> {
-  const { error } = await supabase.from('briefings').insert({
+  const { error } = await getSupabase().from('briefings').insert({
     target_name: meta.target,
     meeting_type: meta.meetingType,
     meeting_at: meta.meetingAt.toISOString(),
@@ -57,7 +57,7 @@ export async function saveBriefing(meta: BriefingMeta, briefing: Briefing): Prom
 }
 
 export async function listRecentBriefings(limit = 8): Promise<SavedBriefing[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('briefings')
     .select('id, created_at, target_name, meeting_type, meeting_at, model, briefing')
     .order('created_at', { ascending: false })

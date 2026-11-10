@@ -9,9 +9,7 @@ export const MEETING_TYPES = [
 export type MeetingType = (typeof MEETING_TYPES)[number];
 
 export const GATEWAY_MODELS = [
-  { value: 'gemini-2.5-flash', label: 'Gemini Direct' },
-  { value: 'google/gemini-2.5-flash', label: 'OpenRouter' },
-  { value: 'nvidia/llama-3.1-nemotron-70b-instruct', label: 'NVIDIA Free' },
+  { value: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash' },
 ] as const;
 
 export type GatewayModel = (typeof GATEWAY_MODELS)[number]['value'];
