@@ -9,7 +9,7 @@ export const MEETING_TYPES = [
 export type MeetingType = (typeof MEETING_TYPES)[number];
 
 export const GATEWAY_MODELS = [
-  { value: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash' },
+  { value: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash Lite' },
 ] as const;
 
 export type GatewayModel = (typeof GATEWAY_MODELS)[number]['value'];
