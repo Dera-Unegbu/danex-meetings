@@ -61,6 +61,11 @@ const config: Config = {
           '5': 'hsl(var(--chart-5))',
         },
       },
+      boxShadow: {
+        glow: '0 0 0 1px rgba(56, 189, 248, 0.20), 0 16px 50px -20px rgba(56, 189, 248, 0.45)',
+        'glow-sm': '0 0 0 1px rgba(56, 189, 248, 0.16), 0 10px 30px -14px rgba(56, 189, 248, 0.40)',
+        panel: '0 30px 70px -40px rgba(2, 6, 23, 0.95)',
+      },
       keyframes: {
         'accordion-down': {
           from: {
@@ -78,10 +83,31 @@ const config: Config = {
             height: '0',
           },
         },
+        'fade-up': {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'pulse-ring': {
+          '0%': { boxShadow: '0 0 0 0 rgba(56, 189, 248, 0.35)' },
+          '70%': { boxShadow: '0 0 0 12px rgba(56, 189, 248, 0)' },
+          '100%': { boxShadow: '0 0 0 0 rgba(56, 189, 248, 0)' },
+        },
+        shimmer: {
+          '0%': { transform: 'translateX(-150%)' },
+          '100%': { transform: 'translateX(250%)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'fade-up': 'fade-up 0.45s ease-out both',
+        'fade-in': 'fade-in 0.35s ease-out both',
+        'pulse-ring': 'pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        shimmer: 'shimmer 1.8s linear infinite',
       },
     },
   },

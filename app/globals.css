@@ -42,33 +42,35 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
+
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --background: 223 39% 7%;
+    --foreground: 210 40% 96%;
+    --card: 222 47% 10%;
+    --card-foreground: 210 40% 96%;
+    --popover: 222 47% 9%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 199 89% 55%;
+    --primary-foreground: 223 39% 7%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 217 33% 14%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
+    --border: 217 33% 19%;
+    --input: 217 33% 19%;
+    --ring: 199 89% 55%;
+    --chart-1: 199 89% 55%;
     --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --chart-3: 43 74% 60%;
+    --chart-4: 262 80% 66%;
+    --chart-5: 340 75% 60%;
+    --radius: 0.875rem;
   }
 }
 
@@ -76,7 +78,115 @@
   * {
     @apply border-border;
   }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(56, 189, 248, 0.16), transparent 70%),
+      radial-gradient(ellipse 60% 45% at 100% 0%, rgba(129, 140, 248, 0.12), transparent 70%),
+      radial-gradient(ellipse 55% 45% at 0% 55%, rgba(16, 185, 129, 0.06), transparent 70%);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: rgba(56, 189, 248, 0.3);
+    color: #f8fafc;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(51, 65, 85, 0.8);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(71, 85, 105, 0.95);
+    background-clip: content-box;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply border border-slate-800/80 bg-slate-900/60 backdrop-blur-md;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/*
+ * Print / PDF: always render the dossier on crisp white paper,
+ * regardless of the on-screen dark theme.
+ */
+@media print {
+  @page {
+    margin: 13mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    background-image: none !important;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  #briefing-canvas {
+    background: #ffffff !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: #0f172a !important;
+  }
+
+  #briefing-canvas h2,
+  #briefing-canvas h3,
+  #briefing-canvas h4 {
+    color: #000000 !important;
+  }
+
+  #briefing-canvas p,
+  #briefing-canvas li,
+  #briefing-canvas span,
+  #briefing-canvas time {
+    color: #1e293b !important;
+  }
+
+  #briefing-canvas a {
+    color: #1d4ed8 !important;
+    text-decoration: underline;
+  }
+
+  #briefing-canvas section,
+  #briefing-canvas li,
+  #briefing-canvas footer {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  #briefing-canvas .shadow-lg,
+  #briefing-canvas .shadow-xl,
+  #briefing-canvas .shadow-2xl {
+    box-shadow: none !important;
   }
 }

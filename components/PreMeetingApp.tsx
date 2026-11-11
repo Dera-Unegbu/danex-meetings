@@ -133,31 +133,50 @@ export function PreMeetingApp() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur print:hidden">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-700 text-white">
+    <div className="relative min-h-screen overflow-x-hidden bg-[#0b0f19] text-slate-100 print:bg-white print:text-black">
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 print:hidden">
+        <div className="absolute -top-48 left-1/2 h-[560px] w-[880px] -translate-x-1/2 rounded-full bg-sky-500/10 blur-3xl" />
+        <div className="absolute -right-40 top-24 h-96 w-96 rounded-full bg-indigo-500/10 blur-3xl" />
+        <div className="absolute -left-32 top-1/2 h-80 w-80 rounded-full bg-emerald-500/5 blur-3xl" />
+        <div className="absolute inset-0 opacity-[0.18] [background-image:linear-gradient(to_right,rgba(148,163,184,0.10)_1px,transparent_1px),linear-gradient(to_bottom,rgba(148,163,184,0.10)_1px,transparent_1px)] [background-size:64px_64px] [mask-image:radial-gradient(ellipse_at_top,black,transparent_72%)]" />
+      </div>
+
+      <header className="sticky top-0 z-30 border-b border-slate-800/60 bg-[#0b0f19]/70 backdrop-blur-xl print:hidden">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 via-sky-500 to-indigo-600 text-white shadow-lg shadow-sky-500/25 ring-1 ring-white/20">
               <Compass className="h-5 w-5" aria-hidden="true" />
             </span>
-            <div className="leading-tight">
-              <p className="text-sm font-semibold">Danex</p>
-              <p className="text-xs text-slate-500">Pre-Meeting Intelligence</p>
+            <div className="min-w-0 leading-tight">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold tracking-tight text-white">Danex</p>
+                <span className="hidden rounded-full border border-slate-700/70 bg-slate-900/70 px-2 py-0.5 font-mono text-[9px] font-medium uppercase tracking-[0.18em] text-slate-400 sm:inline-flex">
+                  Pre-Meeting
+                </span>
+              </div>
+              <p className="truncate text-[11px] text-slate-500">Intelligence Agent</p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Open API settings"
-            onClick={() => setSettingsOpen(true)}
-            className="text-slate-600 hover:text-slate-900"
-          >
-            <Settings className="h-5 w-5" aria-hidden="true" />
-          </Button>
+
+          <div className="flex items-center gap-2">
+            <span className="hidden items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium text-emerald-300 sm:inline-flex">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" aria-hidden="true" />
+              AI Ready
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Open API settings"
+              onClick={() => setSettingsOpen(true)}
+              className="h-10 w-10 rounded-full border border-slate-800 bg-slate-900/60 text-slate-300 transition-colors hover:border-slate-700 hover:bg-slate-800 hover:text-white"
+            >
+              <Settings className="h-5 w-5" aria-hidden="true" />
+            </Button>
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
         <ControlPanel
           target={target}
           onTargetChange={setTarget}
@@ -171,7 +190,7 @@ export function PreMeetingApp() {
           onGenerate={() => void handleGenerate()}
         />
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
           <div className="min-w-0">
             {stage ? (
               <GenerationProgress stage={stage} />

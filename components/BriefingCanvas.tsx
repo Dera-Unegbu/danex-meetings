@@ -53,38 +53,52 @@ export function BriefingCanvas({ meta, briefing }: BriefingCanvasProps) {
   return (
     <article
       id="briefing-canvas"
-      className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm print:border-0 print:shadow-none"
+      className="relative overflow-hidden rounded-3xl border border-slate-800/80 bg-slate-900/60 shadow-panel backdrop-blur-md print:border-0 print:bg-white print:text-black print:shadow-none"
     >
-      <header className="border-b border-slate-200 bg-white px-6 py-7 sm:px-8">
-        <div className="flex flex-wrap items-start justify-between gap-6">
+      <div
+        aria-hidden="true"
+        className="h-1 w-full bg-gradient-to-r from-sky-500 via-cyan-400 to-indigo-500 print:hidden"
+      />
+
+      <header className="relative border-b border-slate-800/70 px-6 py-7 sm:px-8 print:border-slate-200">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-24 -top-28 h-56 w-56 rounded-full bg-sky-500/10 blur-3xl print:hidden"
+        />
+        <div className="relative flex flex-wrap items-start justify-between gap-6">
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">
-              Pre-Meeting Briefing
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-400 print:text-slate-700">
+              Executive Briefing Dossier
             </p>
-            <h2 className="mt-2 break-words text-3xl font-semibold leading-[1.2] tracking-tight text-slate-900 sm:text-4xl">
+            <h2 className="mt-2.5 break-words text-3xl font-extrabold leading-[1.15] tracking-tight text-white sm:text-4xl print:text-black">
               {meta.target}
             </h2>
-            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-600">
-              <Badge className="border-teal-200 bg-teal-50 text-teal-800 hover:bg-teal-50">
+            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-400 print:text-slate-700">
+              <Badge className="rounded-full border-sky-500/20 bg-sky-500/10 px-3 py-1 text-sky-300 hover:bg-sky-500/10 print:border-slate-300 print:bg-white print:text-slate-700">
                 {meta.meetingType}
               </Badge>
               <span className="inline-flex items-center gap-1.5">
-                <Calendar className="h-4 w-4 text-slate-400" aria-hidden="true" />
+                <Calendar className="h-4 w-4 text-slate-500 print:text-slate-500" aria-hidden="true" />
                 {new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(meta.meetingAt)}
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <Clock className="h-4 w-4 text-slate-400" aria-hidden="true" />
+                <Clock className="h-4 w-4 text-slate-500 print:text-slate-500" aria-hidden="true" />
                 <span>
-                  <span className="font-medium text-slate-700">30-Day Search Window:</span> {windowLabel}
+                  <span className="font-medium text-slate-300 print:text-slate-700">30-Day Search Window:</span>{' '}
+                  {windowLabel}
                 </span>
               </span>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-2 print:hidden">
-            <Button variant="outline" onClick={handleCopy} className="gap-2">
+            <Button
+              variant="outline"
+              onClick={handleCopy}
+              className="gap-2 rounded-full border-slate-700 bg-slate-950/40 text-slate-200 transition-colors hover:border-slate-600 hover:bg-slate-800 hover:text-white"
+            >
               {copied ? (
-                <Check className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+                <Check className="h-4 w-4 text-emerald-400" aria-hidden="true" />
               ) : (
                 <Copy className="h-4 w-4" aria-hidden="true" />
               )}
@@ -92,7 +106,7 @@ export function BriefingCanvas({ meta, briefing }: BriefingCanvasProps) {
             </Button>
             <Button
               onClick={() => window.print()}
-              className="gap-2 bg-slate-900 text-white hover:bg-slate-800"
+              className="gap-2 rounded-full bg-white text-slate-900 shadow-lg shadow-black/20 transition-all hover:-translate-y-0.5 hover:bg-slate-200"
             >
               <Printer className="h-4 w-4" aria-hidden="true" />
               Export to PDF
@@ -101,7 +115,7 @@ export function BriefingCanvas({ meta, briefing }: BriefingCanvasProps) {
         </div>
       </header>
 
-      <div className="space-y-10 px-6 py-8 sm:px-8">
+      <div className="space-y-9 px-6 py-8 sm:px-8">
         <SummarySection summary={briefing.executiveSummary} confidence={briefing.confidence} />
         <TimelineSection developments={briefing.developments} />
         <InsightsSection

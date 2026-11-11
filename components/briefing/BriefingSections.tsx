@@ -18,11 +18,23 @@ import { formatDateKey } from '@/lib/date-window';
 import { CitedText } from './CitedText';
 import { ConfidenceBadge } from './ConfidenceBadge';
 
+const PRINT_BADGE = 'print:border-slate-300 print:bg-white print:text-slate-700';
+
 export function SectionHeading({ title, detail }: { title: string; detail?: string }) {
   return (
-    <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-      <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500">{title}</h3>
-      {detail && <span className="text-xs text-slate-500">{detail}</span>}
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <div className="flex items-center gap-2.5">
+        <span
+          aria-hidden="true"
+          className="h-4 w-1 rounded-full bg-gradient-to-b from-sky-400 to-indigo-500 print:bg-slate-400"
+        />
+        <h3 className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 print:text-slate-600">
+          {title}
+        </h3>
+      </div>
+      {detail && (
+        <span className="font-mono text-[11px] text-slate-500 print:text-slate-600">{detail}</span>
+      )}
     </div>
   );
 }
@@ -35,14 +47,18 @@ export function SummarySection({
   confidence: Confidence;
 }) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-slate-50/70 p-6">
+    <section className="relative overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950/40 p-6 print:border-slate-300 print:bg-white">
+      <div
+        aria-hidden="true"
+        className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-sky-500 to-indigo-500 print:hidden"
+      />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
+        <h3 className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 print:text-slate-600">
           Executive Summary
         </h3>
         <ConfidenceBadge confidence={confidence} />
       </div>
-      <p className="text-base leading-[1.6] text-slate-800">
+      <p className="text-base leading-[1.75] text-slate-200 print:text-slate-800">
         <CitedText text={summary} />
       </p>
     </section>
@@ -50,11 +66,11 @@ export function SummarySection({
 }
 
 const CATEGORY_STYLES: Record<DevelopmentCategory, { icon: LucideIcon; className: string }> = {
-  Launch: { icon: Rocket, className: 'border-sky-200 bg-sky-50 text-sky-800' },
-  Hire: { icon: UserPlus, className: 'border-orange-200 bg-orange-50 text-orange-800' },
-  Funding: { icon: Banknote, className: 'border-emerald-200 bg-emerald-50 text-emerald-800' },
-  Partnership: { icon: Handshake, className: 'border-teal-200 bg-teal-50 text-teal-800' },
-  Press: { icon: Newspaper, className: 'border-slate-200 bg-white text-slate-700' },
+  Launch: { icon: Rocket, className: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400' },
+  Hire: { icon: UserPlus, className: 'border-sky-500/20 bg-sky-500/10 text-sky-400' },
+  Funding: { icon: Banknote, className: 'border-amber-500/20 bg-amber-500/10 text-amber-400' },
+  Partnership: { icon: Handshake, className: 'border-purple-500/20 bg-purple-500/10 text-purple-400' },
+  Press: { icon: Newspaper, className: 'border-rose-500/20 bg-rose-500/10 text-rose-400' },
 };
 
 function CategoryBadge({ category }: { category: DevelopmentCategory }) {
@@ -62,7 +78,7 @@ function CategoryBadge({ category }: { category: DevelopmentCategory }) {
   const Icon = style.icon;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${style.className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${style.className} ${PRINT_BADGE}`}
     >
       <Icon className="h-3 w-3" aria-hidden="true" />
       {category}
@@ -73,50 +89,65 @@ function CategoryBadge({ category }: { category: DevelopmentCategory }) {
 function DateLabel({ date }: { date: string | null }) {
   if (!date) {
     return (
-      <Badge variant="outline" className="border-slate-300 text-slate-600">
+      <Badge
+        variant="outline"
+        className={`border-slate-700 font-mono text-[10px] uppercase tracking-wide text-slate-400 ${PRINT_BADGE}`}
+      >
         Date Unverified
       </Badge>
     );
   }
-  return <time dateTime={date} className="text-sm font-medium text-slate-700">{formatDateKey(date)}</time>;
+  return (
+    <time
+      dateTime={date}
+      className="font-mono text-xs font-medium uppercase tracking-wide text-slate-400 print:text-slate-600"
+    >
+      {formatDateKey(date)}
+    </time>
+  );
 }
 
 export function TimelineSection({ developments }: { developments: Development[] }) {
   return (
     <section>
       <SectionHeading title="Recent Developments" detail={`${developments.length} items`} />
-      <ol className="ml-2 border-l-2 border-slate-200">
+      <ol className="relative space-y-4 before:absolute before:inset-y-2 before:left-[7px] before:w-px before:bg-gradient-to-b before:from-sky-500/50 before:via-slate-700 before:to-transparent print:before:hidden">
         {developments.map((item, index) => (
-          <li key={`${item.title}-${index}`} className="relative pb-8 pl-8 last:pb-0">
+          <li key={`${item.title}-${index}`} className="relative pl-8 print:break-inside-avoid">
             <span
-              className="absolute -left-[9px] top-1 h-4 w-4 rounded-full border-2 border-white bg-teal-600 ring-1 ring-teal-200"
+              className="absolute left-0 top-5 h-[15px] w-[15px] rounded-full border-2 border-slate-950 bg-sky-400 shadow-[0_0_0_3px_rgba(56,189,248,0.15)] print:hidden"
               aria-hidden="true"
             />
-            <div className="flex flex-wrap items-center gap-2">
-              <DateLabel date={item.date} />
-              <CategoryBadge category={item.category} />
+            <div className="group rounded-2xl border border-slate-800/70 bg-slate-950/40 p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-700/90 hover:bg-slate-900/70 hover:shadow-lg hover:shadow-sky-950/40 print:border-0 print:bg-white print:p-0 print:shadow-none">
+              <div className="flex flex-wrap items-center gap-2">
+                <DateLabel date={item.date} />
+                <CategoryBadge category={item.category} />
+              </div>
+              <h4 className="mt-2.5 text-base font-semibold tracking-tight text-white print:text-black">
+                {item.title}
+              </h4>
+              <p className="mt-1.5 text-sm leading-relaxed text-slate-400 print:text-slate-700">
+                <CitedText text={item.detail} />
+              </p>
+              {item.sourceUrl && (
+                <a
+                  href={item.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-sky-400 underline-offset-4 transition-colors hover:text-sky-300 hover:underline print:text-slate-700"
+                >
+                  {item.sourceTitle || item.sourceUrl}
+                  <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                </a>
+              )}
             </div>
-            <h4 className="mt-2 text-base font-semibold text-slate-900">{item.title}</h4>
-            <p className="mt-1 text-sm leading-relaxed text-slate-600">
-              <CitedText text={item.detail} />
-            </p>
-            {item.sourceUrl && (
-              <a
-                href={item.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-teal-700 underline-offset-4 hover:underline"
-              >
-                {item.sourceTitle || item.sourceUrl}
-                <ExternalLink className="h-3 w-3" aria-hidden="true" />
-              </a>
-            )}
           </li>
         ))}
       </ol>
       {developments.length < 4 && (
-        <p className="mt-6 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-          Fewer than four developments could be dated within the 30-day window, so coverage is limited.
+        <p className="mt-6 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm leading-relaxed text-amber-300/90 print:border-slate-300 print:bg-white print:text-slate-700">
+          Fewer than four developments could be dated within the 30-day window, so coverage is
+          limited.
         </p>
       )}
     </section>
@@ -131,13 +162,16 @@ export function InsightsSection({
   openQuestions: string[];
 }) {
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      <section className="rounded-xl border border-slate-200 bg-white p-6">
+    <div className="grid gap-5 md:grid-cols-2">
+      <section className="rounded-2xl border border-slate-800/80 bg-slate-950/40 p-6 print:border-slate-300 print:bg-white">
         <SectionHeading title="Discussion Points" />
         <ul className="space-y-4">
           {discussionPoints.map((point, index) => (
-            <li key={index} className="flex gap-3 text-sm leading-relaxed text-slate-700">
-              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-teal-600 text-xs font-semibold text-white">
+            <li
+              key={index}
+              className="flex gap-3 text-sm leading-relaxed text-slate-300 print:text-slate-800"
+            >
+              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-sky-500/20 bg-sky-500/10 font-mono text-xs font-semibold text-sky-400 print:border-slate-300 print:bg-white print:text-slate-700">
                 {index + 1}
               </span>
               <span>
@@ -148,12 +182,15 @@ export function InsightsSection({
         </ul>
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6">
+      <section className="rounded-2xl border border-slate-800/80 bg-slate-950/40 p-6 print:border-slate-300 print:bg-white">
         <SectionHeading title="Strategic Questions" />
         <ol className="space-y-3">
           {openQuestions.map((question, index) => (
-            <li key={index} className="flex gap-3 text-sm leading-relaxed text-slate-700">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-300 text-xs font-semibold text-slate-700">
+            <li
+              key={index}
+              className="flex gap-3 text-sm leading-relaxed text-slate-300 print:text-slate-800"
+            >
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-700 bg-slate-900 font-mono text-xs font-semibold text-slate-300 print:border-slate-300 print:bg-white print:text-slate-700">
                 {index + 1}
               </span>
               <span>{question}</span>
@@ -167,17 +204,17 @@ export function InsightsSection({
 
 export function SourcesSection({ sources }: { sources: Source[] }) {
   return (
-    <footer className="border-t border-slate-200 pt-6">
+    <footer className="border-t border-slate-800/70 pt-6 print:border-slate-300">
       <SectionHeading title="Verified Sources" detail={`${sources.length} references`} />
       <ol className="grid gap-3 sm:grid-cols-2">
         {sources.map((source) => (
           <li
             key={source.id}
             id={`source-${source.id}`}
-            className="scroll-mt-24 rounded-lg border border-slate-200 p-3 transition-colors target:border-teal-400 target:bg-teal-50/50"
+            className="scroll-mt-28 rounded-xl border border-slate-800/70 bg-slate-950/30 p-3.5 transition-colors hover:border-slate-700 hover:bg-slate-900/60 target:border-sky-500/50 target:bg-sky-500/10 print:border-slate-200 print:bg-white"
           >
             <div className="flex items-start gap-3">
-              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-700">
+              <span className="rounded-md border border-slate-700/70 bg-slate-900 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-sky-400 print:border-slate-300 print:bg-white print:text-slate-700">
                 [{source.id}]
               </span>
               <div className="min-w-0">
@@ -185,11 +222,11 @@ export function SourcesSection({ sources }: { sources: Source[] }) {
                   href={source.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block truncate text-sm font-medium text-teal-800 underline-offset-4 hover:underline"
+                  className="block truncate text-sm font-medium text-slate-200 underline-offset-4 transition-colors hover:text-sky-300 hover:underline print:text-slate-800"
                 >
                   {source.title}
                 </a>
-                <p className="truncate text-xs text-slate-500">
+                <p className="truncate font-mono text-[11px] text-slate-500 print:text-slate-600">
                   {formatDateKey(source.publishedDate)} | {source.url}
                 </p>
               </div>
