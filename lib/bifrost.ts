@@ -5,6 +5,13 @@ const BIFROST_ENDPOINT = 'https://bifrost-production-09f1.up.railway.app/v1/chat
 const MAX_OUTPUT_TOKENS = 3000;
 const EXCERPT_CHARS = 120;
 
+const messageContentSchema = z.union([
+  z.string(),
+  z.array(z.object({ text: z.string().optional() }).passthrough()).transform((parts) =>
+    parts.flatMap((part) => (part.text ? [part.text] : [])).join('')
+  ),
+]);
+
 export class BifrostError extends Error {
   constructor(
     message: string,
@@ -15,8 +22,37 @@ export class BifrostError extends Error {
 }
 
 const completionSchema = z.object({
-  choices: z.array(z.object({ message: z.object({ content: z.string() }) })).min(1),
+  choices: z.array(z.object({ message: z.object({ content: messageContentSchema }) })).min(1),
 });
+
+function describeResponseShape(value: unknown): string {
+  if (value === null || typeof value !== 'object') {
+    return typeof value;
+  }
+
+  const record = value as Record<string, unknown>;
+  const topLevelKeys = Object.keys(record);
+  const choices = record.choices;
+  const firstChoice =
+    Array.isArray(choices) && choices.length > 0 && typeof choices[0] === 'object' && choices[0] !== null
+      ? (choices[0] as Record<string, unknown>)
+      : null;
+  const message =
+    firstChoice?.message && typeof firstChoice.message === 'object'
+      ? (firstChoice.message as Record<string, unknown>)
+      : null;
+  const content = message?.content;
+
+  return [
+    `top-level keys: ${topLevelKeys.join(', ') || '(none)'}`,
+    `choices: ${Array.isArray(choices) ? `${choices.length} item(s)` : typeof choices}`,
+    firstChoice ? `first choice keys: ${Object.keys(firstChoice).join(', ') || '(none)'}` : null,
+    message ? `message keys: ${Object.keys(message).join(', ') || '(none)'}` : null,
+    message ? `content: ${Array.isArray(content) ? 'array' : typeof content}` : null,
+  ]
+    .filter((part): part is string => part !== null)
+    .join('; ');
+}
 
 export function buildSystemPrompt(todayKey: string): string {
   return `Pre-meeting intelligence bot. Return raw JSON ONLY (no markdown).
@@ -117,8 +153,16 @@ export async function synthesizeBriefing(input: {
 
   const parsed = completionSchema.safeParse(rawJson);
   if (!parsed.success) {
-    throw new BifrostError('Bifrost returned an unexpected response structure.', response.status);
+    throw new BifrostError(
+      `Bifrost returned an unexpected response structure. Expected choices[0].message.content as text; received ${describeResponseShape(rawJson)}.`,
+      response.status
+    );
   }
 
-  return parsed.data.choices[0].message.content;
+  const content = parsed.data.choices[0].message.content;
+  if (!content.trim()) {
+    throw new BifrostError('Bifrost completed the request but returned no text content.', response.status);
+  }
+
+  return content;
 }

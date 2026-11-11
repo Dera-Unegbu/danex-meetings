@@ -41,6 +41,9 @@ export async function generateBriefing(
     userPayload: buildUserPayload({
       target: meta.target,
       meetingType: meta.meetingType,
+      meetingDate: toDateKey(meta.meetingAt),
+      todayKey: toDateKey(window.endDate),
+      windowStartKey: window.startKey,
       sources: sources.map((source) => ({
         ...source,
         content: contentByUrl.get(source.url) ?? '',
