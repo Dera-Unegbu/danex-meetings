@@ -19,6 +19,7 @@ import {
   type MeetingType,
 } from '@/lib/briefing-types';
 import type { BriefingStage } from '@/lib/briefing-generator';
+import { Textarea } from '@/components/ui/textarea';
 
 const STAGE_LABELS: Record<BriefingStage, string> = {
   searching: 'Searching Tavily...',
@@ -26,12 +27,25 @@ const STAGE_LABELS: Record<BriefingStage, string> = {
 };
 
 const PRESET_TARGETS = ['Anthropic', 'OpenAI', 'Stripe', 'Figma'];
+const MAX_MEETING_DESCRIPTION_WORDS = 1000;
+
+function countWords(value: string): number {
+  return value.trim().match(/\S+/g)?.length ?? 0;
+}
+
+function limitWords(value: string, limit: number): string {
+  const words = value.trim().split(/\s+/);
+  if (!value.trim() || words.length <= limit) return value;
+  return words.slice(0, limit).join(' ');
+}
 
 interface ControlPanelProps {
   target: string;
   onTargetChange: (value: string) => void;
   meetingType: MeetingType;
   onMeetingTypeChange: (value: MeetingType) => void;
+  meetingDescription: string;
+  onMeetingDescriptionChange: (value: string) => void;
   meetingAt: string;
   onMeetingAtChange: (value: string) => void;
   model: GatewayModel;
@@ -45,6 +59,8 @@ export function ControlPanel({
   onTargetChange,
   meetingType,
   onMeetingTypeChange,
+  meetingDescription,
+  onMeetingDescriptionChange,
   meetingAt,
   onMeetingAtChange,
   model,
@@ -91,7 +107,7 @@ export function ControlPanel({
             htmlFor="target"
             className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400"
           >
-            Company or person
+            Company or person (add location if relevant)
           </Label>
           <div className="group relative">
             <Search
@@ -102,8 +118,8 @@ export function ControlPanel({
               id="target"
               value={target}
               onChange={(event) => onTargetChange(event.target.value)}
-              placeholder="e.g. Acme Robotics or Jane Doe"
-              maxLength={120}
+              placeholder="e.g. Acme Robotics, Austin, TX or Jane Doe in London"
+              maxLength={240}
               className="h-14 rounded-full border-slate-700/70 bg-slate-950/60 pl-12 pr-5 text-base text-white shadow-inner shadow-black/30 transition-shadow placeholder:text-slate-500 focus-visible:border-sky-500/60 focus-visible:ring-2 focus-visible:ring-sky-500/50 focus-visible:ring-offset-0"
               disabled={isGenerating}
             />
@@ -157,9 +173,36 @@ export function ControlPanel({
                     {type}
                   </SelectItem>
                 ))}
+                <SelectItem value="Custom">Custom — let AI infer</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {meetingType === 'Custom' && (
+            <div className="space-y-2 md:col-span-2 lg:col-span-12">
+              <Label
+                htmlFor="meeting-description"
+                className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400"
+              >
+                Describe this meeting
+              </Label>
+              <Textarea
+                id="meeting-description"
+                value={meetingDescription}
+                onChange={(event) =>
+                  onMeetingDescriptionChange(
+                    limitWords(event.target.value, MAX_MEETING_DESCRIPTION_WORDS)
+                  )
+                }
+                placeholder="Describe the goal, attendees, or context. The AI will infer the meeting style."
+                className="min-h-28 rounded-xl border-slate-800 bg-slate-950/50 text-slate-200 placeholder:text-slate-500 focus-visible:border-sky-500/60 focus-visible:ring-2 focus-visible:ring-sky-500/50 focus-visible:ring-offset-0"
+                disabled={isGenerating}
+              />
+              <p className="text-right font-mono text-[10px] text-slate-500">
+                {countWords(meetingDescription)}/{MAX_MEETING_DESCRIPTION_WORDS} words
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2 lg:col-span-5">
             <Label

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Compass, Settings } from 'lucide-react';
+import { Bookmark, Compass, Settings } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
@@ -38,6 +38,7 @@ interface CurrentBriefing {
 export function PreMeetingApp() {
   const [target, setTarget] = useState('');
   const [meetingType, setMeetingType] = useState<MeetingType>('Sales Call');
+  const [meetingDescription, setMeetingDescription] = useState('');
   const [meetingAt, setMeetingAt] = useState('');
   const [model, setModel] = useState<GatewayModel>(GATEWAY_MODELS[0].value);
   const [keys, setKeys] = useState<ApiKeys>(EMPTY_KEYS);
@@ -89,6 +90,14 @@ export function PreMeetingApp() {
       });
       return;
     }
+    if (meetingType === 'Custom' && !meetingDescription.trim()) {
+      toast({
+        title: 'Describe this meeting',
+        description: 'Add a short description so the AI can infer the meeting style.',
+        variant: 'destructive',
+      });
+      return;
+    }
     if (!keys.tavily || !keys.bifrost) {
       toast({
         title: 'API keys needed',
@@ -102,6 +111,8 @@ export function PreMeetingApp() {
     const meta: BriefingMeta = {
       target: trimmedTarget,
       meetingType,
+      meetingDescription:
+        meetingType === 'Custom' ? meetingDescription.trim() : undefined,
       meetingAt: meetingDate,
       model,
     };
@@ -182,6 +193,8 @@ export function PreMeetingApp() {
           onTargetChange={setTarget}
           meetingType={meetingType}
           onMeetingTypeChange={setMeetingType}
+          meetingDescription={meetingDescription}
+          onMeetingDescriptionChange={setMeetingDescription}
           meetingAt={meetingAt}
           onMeetingAtChange={setMeetingAt}
           model={model}
@@ -209,6 +222,17 @@ export function PreMeetingApp() {
           />
         </div>
       </main>
+
+      <Button
+        asChild
+        size="icon"
+        aria-label="Scroll to recent briefings"
+        className="fixed bottom-4 right-4 z-40 h-12 w-12 rounded-full border border-sky-400/30 bg-slate-900 text-sky-300 shadow-lg shadow-black/40 hover:bg-slate-800 lg:hidden print:hidden"
+      >
+        <a href="#recent-briefings">
+          <Bookmark className="h-5 w-5" aria-hidden="true" />
+        </a>
+      </Button>
 
       <SettingsModal
         open={settingsOpen}

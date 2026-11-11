@@ -37,7 +37,8 @@ const rowSchema = z.object({
   id: z.string(),
   created_at: z.string(),
   target_name: z.string(),
-  meeting_type: z.enum(MEETING_TYPES),
+  meeting_type: z.union([z.enum(MEETING_TYPES), z.literal('Custom')]),
+  meeting_description: z.string().nullish(),
   meeting_at: z.string(),
   model: z.string(),
   briefing: briefingSchema,
@@ -47,6 +48,7 @@ export async function saveBriefing(meta: BriefingMeta, briefing: Briefing): Prom
   const { error } = await getSupabase().from('briefings').insert({
     target_name: meta.target,
     meeting_type: meta.meetingType,
+    meeting_description: meta.meetingDescription ?? null,
     meeting_at: meta.meetingAt.toISOString(),
     model: meta.model,
     briefing,
@@ -59,7 +61,9 @@ export async function saveBriefing(meta: BriefingMeta, briefing: Briefing): Prom
 export async function listRecentBriefings(limit = 8): Promise<SavedBriefing[]> {
   const { data, error } = await getSupabase()
     .from('briefings')
-    .select('id, created_at, target_name, meeting_type, meeting_at, model, briefing')
+    .select(
+      'id, created_at, target_name, meeting_type, meeting_description, meeting_at, model, briefing'
+    )
     .order('created_at', { ascending: false })
     .limit(limit);
   if (error) {
@@ -76,6 +80,7 @@ export async function listRecentBriefings(limit = 8): Promise<SavedBriefing[]> {
         meta: {
           target: parsed.data.target_name,
           meetingType: parsed.data.meeting_type,
+          meetingDescription: parsed.data.meeting_description ?? undefined,
           meetingAt: new Date(parsed.data.meeting_at),
           model: parsed.data.model as BriefingMeta['model'],
         },

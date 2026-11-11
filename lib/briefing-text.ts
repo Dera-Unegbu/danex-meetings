@@ -7,6 +7,7 @@ export function formatBriefingAsText(meta: BriefingMeta, briefing: Briefing): st
   const lines: string[] = [
     `Pre-Meeting Briefing: ${meta.target}`,
     `${meta.meetingType} | ${format(meta.meetingAt, 'PPp')}`,
+    ...(meta.meetingDescription ? [`Meeting context: ${meta.meetingDescription}`] : []),
     `30-day search window: ${formatDateKey(researchWindow.startKey)} to ${formatDateKey(toDateKey(researchWindow.endDate))}`,
     `Confidence: ${briefing.confidence}`,
     '',

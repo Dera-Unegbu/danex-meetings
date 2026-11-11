@@ -13,7 +13,7 @@ export function RecentBriefings({ items, activeId, isLoading, onSelect }: Recent
   return (
     <aside
       id="recent-briefings"
-      className="h-fit rounded-2xl border border-slate-800/80 bg-slate-900/60 p-5 shadow-xl shadow-sky-950/20 backdrop-blur-md print:hidden lg:sticky lg:top-24"
+      className="h-fit scroll-mt-24 rounded-2xl border border-slate-800/80 bg-slate-900/60 p-5 shadow-xl shadow-sky-950/20 backdrop-blur-md print:hidden lg:sticky lg:top-24"
     >
       <div className="mb-4 flex items-center gap-2.5">
         <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-800 bg-slate-950/60 text-sky-400">

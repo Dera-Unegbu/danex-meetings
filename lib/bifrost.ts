@@ -57,6 +57,8 @@ function describeResponseShape(value: unknown): string {
 export function buildSystemPrompt(todayKey: string): string {
   return `Pre-meeting intelligence bot. Return raw JSON ONLY (no markdown).
 Rules:
+- Tailor the briefing to the meeting type in the user payload. If it is Custom, infer the meeting style from the user's meeting description and tailor the recommendations accordingly.
+- Use a location included with the target to disambiguate the person or company; do not assume a location that was not provided.
 - summary: 5 sentences (1: identity/domain, 2: 30-day focus, 3: milestone, 4: challenge/competition, 5: recommended angle).
 - developments: >=4 items (date YYYY-MM-DD <= ${todayKey}, category Launch|Hire|Funding|Partnership|Press, title, detail, source_url, source_title).
 - discussion_points: 3 strings.
@@ -69,6 +71,7 @@ JSON format:
 export function buildUserPayload(input: {
   target: string;
   meetingType: MeetingType;
+  meetingDescription?: string;
   meetingDate: string;
   todayKey: string;
   windowStartKey: string;
@@ -80,6 +83,9 @@ export function buildUserPayload(input: {
   return JSON.stringify({
     target: input.target,
     type: input.meetingType,
+    ...(input.meetingDescription
+      ? { meeting_description: input.meetingDescription }
+      : {}),
     // Shorten source objects to only essential citation data
     sources: trimmedSources.map((s) => ({
       id: s.id,

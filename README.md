@@ -10,6 +10,8 @@ Danex is an AI-powered pre-meeting briefing agent that researches any company or
 ## ✨ Features
 
 - 🎯 **Contextual Intelligence:** Tailors briefings based on meeting type (*Sales Call, Investor Pitch, Partnership, Business Development, or General*).
+- ✍️ **Custom Meeting Context:** Describe a custom meeting in up to 1,000 words and let the AI infer the right briefing style.
+- 📍 **Location-Aware Research:** Add a location to the company or person search to help disambiguate results.
 - 🕒 **30-Day Recency Filter:** Captures only recent news, releases, and strategic shifts to ensure relevant, up-to-date context.
 - 📊 **Structured Executive Briefings:** Outputs five core components:
   - 📝 **Executive Summary**
@@ -19,6 +21,7 @@ Danex is an AI-powered pre-meeting briefing agent that researches any company or
   - 🔗 **Verified Sources**
 - 🔀 **Multi-Model Orchestration:** Leverages model routing to balance latency, reasoning depth, and throughput.
 - 📄 **One-Click Export:** Instantly download formatted PDF briefings ready for client meetings.
+- 🔖 **Mobile Briefing Shortcut:** Jump directly to saved briefings on smaller screens.
 
 ---
 
@@ -81,6 +84,7 @@ OPENROUTER_API_KEY=your_openrouter_api_key
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+Apply the SQL files in `supabase/migrations` to your Supabase project before running the app.
 4. Run the development server
 Bash
 npm run dev

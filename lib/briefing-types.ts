@@ -6,7 +6,7 @@ export const MEETING_TYPES = [
   'General',
 ] as const;
 
-export type MeetingType = (typeof MEETING_TYPES)[number];
+export type MeetingType = (typeof MEETING_TYPES)[number] | 'Custom';
 
 export const GATEWAY_MODELS = [
   { value: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash Lite' },
@@ -54,6 +54,7 @@ export interface Briefing {
 export interface BriefingMeta {
   target: string;
   meetingType: MeetingType;
+  meetingDescription?: string;
   meetingAt: Date;
   model: GatewayModel;
 }
