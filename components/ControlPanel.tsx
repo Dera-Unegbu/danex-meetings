@@ -173,7 +173,7 @@ export function ControlPanel({
                     {type}
                   </SelectItem>
                 ))}
-                <SelectItem value="Custom">Custom — let AI infer</SelectItem>
+                <SelectItem value="Custom">Custom — Describe the type of meeting in your own words</SelectItem>
               </SelectContent>
             </Select>
           </div>
