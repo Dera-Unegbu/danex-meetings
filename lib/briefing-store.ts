@@ -44,20 +44,6 @@ const rowSchema = z.object({
   briefing: briefingSchema,
 });
 
-export async function saveBriefing(meta: BriefingMeta, briefing: Briefing): Promise<void> {
-  const { error } = await getSupabase().from('briefings').insert({
-    target_name: meta.target,
-    meeting_type: meta.meetingType,
-    meeting_description: meta.meetingDescription ?? null,
-    meeting_at: meta.meetingAt.toISOString(),
-    model: meta.model,
-    briefing,
-  });
-  if (error) {
-    throw new Error(error.message);
-  }
-}
-
 export async function listRecentBriefings(limit = 8): Promise<SavedBriefing[]> {
   const { data, error } = await getSupabase()
     .from('briefings')

@@ -3,9 +3,13 @@ import { buildSources, BriefingParseError, parseBriefing } from './briefing-pars
 import type { Briefing, BriefingMeta } from './briefing-types';
 import { getResearchWindow, toDateKey } from './date-window';
 import { searchTavily, TavilyError } from './tavily';
-import type { ApiKeys } from './settings-storage';
 
-export type BriefingStage = 'searching' | 'synthesizing';
+export type BriefingStage = 'searching' | 'synthesizing' | 'generating';
+
+export interface ApiKeys {
+  tavily: string;
+  bifrost: string;
+}
 
 const MAX_SOURCES_FOR_MODEL = 5;
 

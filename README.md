@@ -34,7 +34,7 @@ Danex is an AI-powered pre-meeting briefing agent that researches any company or
              │
              ▼
 ┌──────────────────────────┐
-│  Next.js API Route       │ ──> /api/research
+│  Netlify Function        │ ──> /.netlify/functions/briefing-api
 └────────────┬─────────────┘
              │
              ├─────────────────────────────────────────┐
@@ -71,24 +71,28 @@ npm install
 # or
 pnpm install
 3. Environment Setup
-Create a .env.local file in the root directory and add your credentials:
+Set these variables in the Netlify site dashboard. Keep Tavily and Bifrost keys as server-only variables; do not prefix them with `NEXT_PUBLIC_` and do not add them to Supabase:
 
-Code snippet
-# Tavily API
-TAVILY_API_KEY=your_tavily_api_key
-
-# Bifrost AI Gateway / OpenRouter
-BIFROST_AI_GATEWAY_URL=your_bifrost_gateway_url
-OPENROUTER_API_KEY=your_openrouter_api_key
-
-# Supabase
+```text
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-Apply the SQL files in `supabase/migrations` to your Supabase project before running the app.
-4. Run the development server
-Bash
-npm run dev
-Open http://localhost:3000 in your browser to see the app.
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+TAVILY_API_KEY=your_tavily_api_key
+BIFROST_API_KEY=your_bifrost_api_key
+```
+
+The Supabase URL and anon/publishable key are used by the browser for Auth. Keep the Supabase service-role key, Tavily key, and Bifrost key server-only in Netlify.
+
+4. Configure Supabase
+- Apply every SQL migration in `supabase/migrations` in timestamp order.
+- Enable Email and Anonymous sign-ins in Authentication providers.
+- Disable email confirmation if you want email sign-ups to be usable immediately. If confirmation is enabled, new users must verify their address before signing in.
+- Set the Site URL and allowed redirect URLs to your Netlify site.
+
+5. Run the development server
+Run `npx netlify dev` to serve the Next.js app and its Netlify Functions together locally.
+
+Guest briefings are not stored. Guests receive 5 generations per anonymous Supabase session; email accounts receive 50 generations and have their briefings saved to their account. Paid plans and Google sign-in are not included yet.
 
 🛡 License
 Distributed under the MIT License. See LICENSE for more information.

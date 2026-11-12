@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Bookmark, Compass, Settings } from 'lucide-react';
+import { Bookmark, Compass } from 'lucide-react';
+import type { User } from '@supabase/supabase-js';
 import { format, addDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
@@ -13,16 +14,16 @@ import {
   type MeetingType,
   type SavedBriefing,
 } from '@/lib/briefing-types';
-import { describeGenerationError, generateBriefing, type BriefingStage } from '@/lib/briefing-generator';
-import { listRecentBriefings, saveBriefing } from '@/lib/briefing-store';
-import { loadApiKeys, type ApiKeys } from '@/lib/settings-storage';
+import type { BriefingStage } from '@/lib/briefing-generator';
+import { BriefingApiError, getBriefingUsage, requestBriefing, type UsageSummary } from '@/lib/briefing-api';
+import { listRecentBriefings } from '@/lib/briefing-store';
+import { getSupabase } from '@/lib/supabase';
+import { AuthScreen } from './AuthScreen';
+import { AccountModal } from './AccountModal';
 import { BriefingCanvas } from './BriefingCanvas';
 import { ControlPanel } from './ControlPanel';
 import { EmptyBriefingState, GenerationProgress } from './GenerationProgress';
 import { RecentBriefings } from './RecentBriefings';
-import { SettingsModal } from './SettingsModal';
-
-const EMPTY_KEYS: ApiKeys = { tavily: '', bifrost: '' };
 
 function defaultMeetingValue(): string {
   const tomorrowMorning = addDays(new Date(), 1);
@@ -36,13 +37,17 @@ interface CurrentBriefing {
 }
 
 export function PreMeetingApp() {
+  const [user, setUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [usage, setUsage] = useState<UsageSummary | null>(null);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [target, setTarget] = useState('');
   const [meetingType, setMeetingType] = useState<MeetingType>('Sales Call');
   const [meetingDescription, setMeetingDescription] = useState('');
   const [meetingAt, setMeetingAt] = useState('');
   const [model, setModel] = useState<GatewayModel>(GATEWAY_MODELS[0].value);
-  const [keys, setKeys] = useState<ApiKeys>(EMPTY_KEYS);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [stage, setStage] = useState<BriefingStage | null>(null);
   const [current, setCurrent] = useState<CurrentBriefing | null>(null);
   const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
@@ -50,6 +55,12 @@ export function PreMeetingApp() {
   const [historyLoading, setHistoryLoading] = useState(true);
 
   const refreshHistory = useCallback(async () => {
+    if (!user || user.is_anonymous) {
+      setHistory([]);
+      setHistoryLoading(false);
+      return;
+    }
+
     setHistoryLoading(true);
     try {
       setHistory(await listRecentBriefings());
@@ -62,13 +73,114 @@ export function PreMeetingApp() {
     } finally {
       setHistoryLoading(false);
     }
+  }, [user]);
+
+  useEffect(() => {
+    setMeetingAt(defaultMeetingValue());
+    window.localStorage.removeItem('danex.tavilyApiKey');
+    window.localStorage.removeItem('danex.bifrostVirtualKey');
+    const savedTheme = window.localStorage.getItem('danex.theme');
+    if (savedTheme === 'light' || savedTheme === 'dark') {
+      setTheme(savedTheme);
+      document.documentElement.dataset.theme = savedTheme;
+    }
+
+    const supabase = getSupabase();
+    let active = true;
+    const syncSession = async (session: Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session']) => {
+      if (!active) return;
+      setUser(session?.user ?? null);
+      setAuthReady(true);
+      if (!session) {
+        setUsage(null);
+        return;
+      }
+
+      try {
+        const currentUsage = await getBriefingUsage(session.access_token);
+        if (active) setUsage(currentUsage);
+      } catch {
+        if (active) {
+          toast({
+            title: 'Usage unavailable',
+            description: 'Your available briefing count could not be loaded.',
+            variant: 'destructive',
+          });
+        }
+      }
+    };
+
+    void supabase.auth.getSession().then(({ data, error }) => {
+      if (error) {
+        toast({
+          title: 'Sign-in unavailable',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+      void syncSession(data.session);
+    });
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      void syncSession(session);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
-    setKeys(loadApiKeys());
-    setMeetingAt(defaultMeetingValue());
+    if (!authReady) return;
+    if (!user || user.is_anonymous) {
+      setHistory([]);
+      setHistoryLoading(false);
+      return;
+    }
     void refreshHistory();
-  }, [refreshHistory]);
+  }, [authReady, user, refreshHistory]);
+
+  function handleThemeChange(nextTheme: 'dark' | 'light') {
+    setTheme(nextTheme);
+    document.documentElement.dataset.theme = nextTheme;
+    window.localStorage.setItem('danex.theme', nextTheme);
+  }
+
+  async function handleContinueAsGuest() {
+    const { error } = await getSupabase().auth.signInAnonymously();
+    if (error) throw error;
+  }
+
+  async function handleAuthenticate(mode: 'signin' | 'signup') {
+    setAuthMode(mode);
+    setAccountOpen(false);
+    if (user?.is_anonymous) {
+      const { error } = await getSupabase().auth.signOut();
+      if (error) {
+        toast({
+          title: 'Could not leave guest mode',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+    }
+  }
+
+  async function handleSignOut() {
+    const { error } = await getSupabase().auth.signOut();
+    if (error) {
+      toast({
+        title: 'Sign out failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+    setAccountOpen(false);
+    setAuthMode('signin');
+  }
 
   async function handleGenerate() {
     const trimmedTarget = target.trim();
@@ -98,13 +210,22 @@ export function PreMeetingApp() {
       });
       return;
     }
-    if (!keys.tavily || !keys.bifrost) {
+    if (!user) {
       toast({
-        title: 'API keys needed',
-        description: 'Add your Tavily and Bifrost keys in Settings to generate a briefing.',
+        title: 'Sign in required',
+        description: 'Continue as a guest or sign in to generate a briefing.',
         variant: 'destructive',
       });
-      setSettingsOpen(true);
+      return;
+    }
+
+    const { data: sessionData, error: sessionError } = await getSupabase().auth.getSession();
+    if (sessionError || !sessionData.session) {
+      toast({
+        title: 'Session expired',
+        description: 'Please sign in again to continue.',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -118,21 +239,36 @@ export function PreMeetingApp() {
     };
 
     try {
-      const briefing = await generateBriefing(meta, keys, setStage);
+      setStage('generating');
+      const result = await requestBriefing(meta, sessionData.session.access_token);
+      const briefing = result.briefing;
+      setUsage(result.usage);
       setCurrent({ meta, briefing });
       setActiveHistoryId(null);
-      saveBriefing(meta, briefing)
-        .then(refreshHistory)
-        .catch(() =>
-          toast({
-            title: 'Not saved to history',
-            description: 'This briefing is on screen, but it could not be saved for later.',
-            variant: 'destructive',
-          })
-        );
+      if (!user.is_anonymous) {
+        await refreshHistory();
+      } else {
+        toast({
+          title: 'Sign in to store your briefings for later',
+          description: 'Guest briefings are not saved to your account.',
+        });
+      }
     } catch (error) {
-      const { title, description } = describeGenerationError(error);
-      toast({ title, description, variant: 'destructive' });
+      if (error instanceof BriefingApiError && error.status === 429) {
+        toast({
+          title: user.is_anonymous ? 'Guest limit reached' : 'Free account limit reached',
+          description: error.message,
+          variant: 'destructive',
+        });
+        setAccountOpen(true);
+        void getBriefingUsage(sessionData.session.access_token).then(setUsage).catch(() => undefined);
+      } else {
+        toast({
+          title: 'Briefing generation failed',
+          description: error instanceof Error ? error.message : 'Please try again.',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setStage(null);
     }
@@ -142,6 +278,31 @@ export function PreMeetingApp() {
     setCurrent({ meta: item.meta, briefing: item.briefing });
     setActiveHistoryId(item.id);
   }
+
+  if (!authReady) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#0b0f19] text-slate-400">
+        <span className="animate-pulse text-sm">Loading your account...</span>
+      </main>
+    );
+  }
+
+  if (!user) {
+    return (
+      <AuthScreen
+        key={authMode}
+        initialMode={authMode}
+        onContinueAsGuest={handleContinueAsGuest}
+      />
+    );
+  }
+
+  const accountName = user.is_anonymous
+    ? 'Guest'
+    : typeof user.user_metadata.full_name === 'string'
+      ? user.user_metadata.full_name
+      : user.email ?? 'Account';
+  const accountInitial = accountName.trim().charAt(0).toUpperCase() || 'U';
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#0b0f19] text-slate-100 print:bg-white print:text-black">
@@ -170,6 +331,11 @@ export function PreMeetingApp() {
           </div>
 
           <div className="flex items-center gap-2">
+            {usage && (
+              <span className="hidden text-xs text-slate-400 sm:inline">
+                {usage.remaining} uses left
+              </span>
+            )}
             <span className="hidden items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium text-emerald-300 sm:inline-flex">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" aria-hidden="true" />
               AI Ready
@@ -177,11 +343,11 @@ export function PreMeetingApp() {
             <Button
               variant="ghost"
               size="icon"
-              aria-label="Open API settings"
-              onClick={() => setSettingsOpen(true)}
+              aria-label={`Open account settings for ${accountName}`}
+              onClick={() => setAccountOpen(true)}
               className="h-10 w-10 rounded-full border border-slate-800 bg-slate-900/60 text-slate-300 transition-colors hover:border-slate-700 hover:bg-slate-800 hover:text-white"
             >
-              <Settings className="h-5 w-5" aria-hidden="true" />
+              <span className="text-sm font-semibold" aria-hidden="true">{accountInitial}</span>
             </Button>
           </div>
         </div>
@@ -218,7 +384,9 @@ export function PreMeetingApp() {
             items={history}
             activeId={activeHistoryId}
             isLoading={historyLoading}
+            isGuest={user.is_anonymous === true}
             onSelect={handleSelectHistory}
+            onSignIn={() => setAccountOpen(true)}
           />
         </div>
       </main>
@@ -234,11 +402,15 @@ export function PreMeetingApp() {
         </a>
       </Button>
 
-      <SettingsModal
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-        keys={keys}
-        onSave={setKeys}
+      <AccountModal
+        open={accountOpen}
+        onOpenChange={setAccountOpen}
+        user={user}
+        usage={usage}
+        theme={theme}
+        onThemeChange={handleThemeChange}
+        onAuthenticate={(mode) => void handleAuthenticate(mode)}
+        onSignOut={() => void handleSignOut()}
       />
     </div>
   );

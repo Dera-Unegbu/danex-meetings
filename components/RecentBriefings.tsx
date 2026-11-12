@@ -6,10 +6,19 @@ interface RecentBriefingsProps {
   items: SavedBriefing[];
   activeId: string | null;
   isLoading: boolean;
+  isGuest?: boolean;
   onSelect: (item: SavedBriefing) => void;
+  onSignIn?: () => void;
 }
 
-export function RecentBriefings({ items, activeId, isLoading, onSelect }: RecentBriefingsProps) {
+export function RecentBriefings({
+  items,
+  activeId,
+  isLoading,
+  isGuest = false,
+  onSelect,
+  onSignIn,
+}: RecentBriefingsProps) {
   return (
     <aside
       id="recent-briefings"
@@ -29,9 +38,24 @@ export function RecentBriefings({ items, activeId, isLoading, onSelect }: Recent
       )}
 
       {!isLoading && items.length === 0 && (
-        <p className="text-xs leading-relaxed text-slate-500">
-          Briefings you generate are saved here so you can reopen them later.
-        </p>
+        isGuest ? (
+          <div className="space-y-3">
+            <p className="text-xs leading-relaxed text-slate-400">
+              Sign in to store your briefings for later.
+            </p>
+            <button
+              type="button"
+              onClick={onSignIn}
+              className="text-xs font-semibold text-sky-400 transition-colors hover:text-sky-300"
+            >
+              Sign in or create an account
+            </button>
+          </div>
+        ) : (
+          <p className="text-xs leading-relaxed text-slate-500">
+            Briefings you generate are saved here so you can reopen them later.
+          </p>
+        )
       )}
 
       <ul className="space-y-2">

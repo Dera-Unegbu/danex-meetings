@@ -3,6 +3,12 @@ import type { BriefingStage } from '@/lib/briefing-generator';
 
 const STEPS: Array<{ stage: BriefingStage; label: string; detail: string; icon: typeof Globe }> = [
   {
+    stage: 'generating',
+    label: 'Building your briefing',
+    detail: 'Searching recent news and synthesizing a cited briefing.',
+    icon: Sparkles,
+  },
+  {
     stage: 'searching',
     label: 'Searching Tavily',
     detail: 'Scanning news, launches, hires and funding from the last 30 days.',
@@ -18,7 +24,7 @@ const STEPS: Array<{ stage: BriefingStage; label: string; detail: string; icon: 
 
 export function GenerationProgress({ stage }: { stage: BriefingStage }) {
   const activeIndex = STEPS.findIndex((step) => step.stage === stage);
-  const progress = stage === 'searching' ? 50 : 90;
+  const progress = stage === 'generating' ? 65 : stage === 'searching' ? 50 : 90;
 
   return (
     <div className="relative overflow-hidden rounded-3xl border border-slate-800/80 bg-slate-900/60 p-8 shadow-panel backdrop-blur-md print:hidden">

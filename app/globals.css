@@ -131,6 +131,55 @@
   }
 }
 
+[data-theme='light'] body {
+  background-color: #f8fafc;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(56, 189, 248, 0.1), transparent 70%),
+    radial-gradient(ellipse 60% 45% at 100% 0%, rgba(129, 140, 248, 0.08), transparent 70%);
+  color: #0f172a;
+}
+
+[data-theme='light'] [class~='bg-[#0b0f19]'] {
+  background-color: #f8fafc;
+}
+
+[data-theme='light'] [class~='bg-slate-900/70'],
+[data-theme='light'] [class~='bg-slate-900/60'],
+[data-theme='light'] [class~='bg-slate-900/50'],
+[data-theme='light'] [class~='bg-slate-900/40'],
+[data-theme='light'] [class~='bg-slate-900/95'],
+[data-theme='light'] [class~='bg-slate-950/60'],
+[data-theme='light'] [class~='bg-slate-950/50'],
+[data-theme='light'] [class~='bg-slate-950/40'] {
+  background-color: rgba(255, 255, 255, 0.92);
+}
+
+[data-theme='light'] [class~='text-slate-100'],
+[data-theme='light'] [class~='text-slate-200'],
+[data-theme='light'] [class~='text-slate-300'],
+[data-theme='light'] [class~='text-slate-400'],
+[data-theme='light'] [class~='text-slate-500'] {
+  color: #334155;
+}
+
+[data-theme='light'] [class~='text-white']:not([class*='bg-gradient']) {
+  color: #0f172a;
+}
+
+[data-theme='light'] [class~='border-slate-800'],
+[data-theme='light'] [class~='border-slate-800/80'],
+[data-theme='light'] [class~='border-slate-800/70'],
+[data-theme='light'] [class~='border-slate-700'],
+[data-theme='light'] [class~='border-slate-700/70'] {
+  border-color: #cbd5e1;
+}
+
+[data-theme='light'] input,
+[data-theme='light'] textarea,
+[data-theme='light'] select {
+  color: #0f172a;
+}
+
 /*
  * Print / PDF: always render the dossier on crisp white paper,
  * regardless of the on-screen dark theme.

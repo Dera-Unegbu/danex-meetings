@@ -22,6 +22,7 @@ import type { BriefingStage } from '@/lib/briefing-generator';
 import { Textarea } from '@/components/ui/textarea';
 
 const STAGE_LABELS: Record<BriefingStage, string> = {
+  generating: 'Building your briefing...',
   searching: 'Searching Tavily...',
   synthesizing: 'Synthesizing with Bifrost...',
 };
