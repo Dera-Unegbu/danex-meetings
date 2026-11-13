@@ -64,9 +64,11 @@ function createAuthClient() {
 }
 
 function getDatabasePool() {
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
   if (!connectionString) {
-    throw new Error('Missing PostgreSQL server configuration: DATABASE_URL.');
+    throw new Error(
+      'Missing PostgreSQL server configuration: SUPABASE_DATABASE_URL or DATABASE_URL.'
+    );
   }
   databasePool ??= new Pool({
     connectionString,
