@@ -77,14 +77,16 @@ Set these variables in the Netlify site dashboard. Keep Tavily and Bifrost keys 
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+SUPABASE_DATABASE_URL=your_supabase_transaction_pooler_url
 TAVILY_API_KEY=your_tavily_api_key
 BIFROST_API_KEY=your_bifrost_api_key
 ```
 
-The Supabase URL and anon/publishable key are used by the browser for Auth. Keep the Supabase service-role key, Tavily key, and Bifrost key server-only in Netlify.
+Use the Supabase transaction pooler connection string for `SUPABASE_DATABASE_URL` (or `DATABASE_URL`); the Netlify function uses it for PostgreSQL reads and writes. This is a PostgreSQL connection string, not the Supabase project URL, and must remain server-only. The browser Auth client uses the Supabase project URL and anon/publishable key as `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Do not pass the database connection string to `createClient`. The server uses `SUPABASE_SERVICE_ROLE_KEY` to validate Auth tokens. Keep the service-role key, database URL, Tavily key, and Bifrost key server-only in Netlify.
 
 4. Configure Supabase
 - Apply every SQL migration in `supabase/migrations` in timestamp order.
+- The `briefings.user_id` and `briefing_usage.user_id` columns reference `auth.users.id`; briefings are saved only for signed-in accounts, while both guests and members have usage tracked by their Supabase user ID.
 - Enable Email and Anonymous sign-ins in Authentication providers.
 - Disable email confirmation if you want email sign-ups to be usable immediately. If confirmation is enabled, new users must verify their address before signing in.
 - Set the Site URL and allowed redirect URLs to your Netlify site.

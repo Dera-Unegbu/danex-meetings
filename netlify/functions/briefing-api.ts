@@ -1,4 +1,5 @@
 import { createClient, type User } from '@supabase/supabase-js';
+import { Pool } from 'pg';
 import { z } from 'zod';
 import { describeGenerationError, generateBriefing } from '../../lib/briefing-generator';
 import {
@@ -10,6 +11,8 @@ import {
 
 const GUEST_LIMIT = 5;
 const MEMBER_LIMIT = 50;
+
+let databasePool: Pool | null = null;
 
 const requestSchema = z.object({
   target: z.string().trim().min(1).max(240),
@@ -45,40 +48,58 @@ function response(statusCode: number, body: unknown) {
   };
 }
 
-function createAdminClient() {
+function createAuthClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceRoleKey) {
-    throw new Error('Missing Supabase server configuration.');
+    const missing = [
+      ...(!url ? ['NEXT_PUBLIC_SUPABASE_URL'] : []),
+      ...(!serviceRoleKey ? ['SUPABASE_SERVICE_ROLE_KEY'] : []),
+    ];
+    throw new Error(`Missing Supabase server configuration: ${missing.join(', ')}.`);
   }
   return createClient(url, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 }
 
+function getDatabasePool() {
+  const connectionString = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error(
+      'Missing PostgreSQL server configuration: SUPABASE_DATABASE_URL or DATABASE_URL.'
+    );
+  }
+  databasePool ??= new Pool({
+    connectionString,
+    max: 1,
+    connectionTimeoutMillis: 5_000,
+    idleTimeoutMillis: 10_000,
+  });
+  return databasePool;
+}
+
 async function authenticate(
   event: NetlifyEvent
-): Promise<{ user: User; admin: ReturnType<typeof createAdminClient> } | null> {
+): Promise<{ user: User; authClient: ReturnType<typeof createAuthClient> } | null> {
   const authorization = event.headers.authorization ?? event.headers.Authorization;
   const token = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
   if (!token) return null;
 
-  const admin = createAdminClient();
-  const { data, error } = await admin.auth.getUser(token);
+  const authClient = createAuthClient();
+  const { data, error } = await authClient.auth.getUser(token);
   if (error || !data.user) return null;
-  return { user: data.user, admin };
+  return { user: data.user, authClient };
 }
 
-async function readUsage(admin: ReturnType<typeof createAdminClient>, user: User): Promise<Usage> {
+async function readUsage(user: User): Promise<Usage> {
   const limit = user.is_anonymous ? GUEST_LIMIT : MEMBER_LIMIT;
-  const { data, error } = await admin
-    .from('briefing_usage')
-    .select('used_count')
-    .eq('user_id', user.id)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
+  const { rows } = await getDatabasePool().query<{ used_count: number }>(
+    'SELECT used_count FROM public.briefing_usage WHERE user_id = $1',
+    [user.id]
+  );
 
-  const used = data?.used_count ?? 0;
+  const used = rows[0]?.used_count ?? 0;
   return { used, limit, remaining: Math.max(0, limit - used) };
 }
 
@@ -98,7 +119,7 @@ export const handler = async (event: NetlifyEvent) => {
 
   if (event.httpMethod === 'GET') {
     try {
-      return response(200, { usage: await readUsage(auth.admin, auth.user) });
+      return response(200, { usage: await readUsage(auth.user) });
     } catch (error) {
       console.error('Could not read briefing usage:', error);
       return response(500, { error: 'Could not load usage. Please try again.' });
@@ -127,16 +148,18 @@ export const handler = async (event: NetlifyEvent) => {
   }
 
   const usageLimit = auth.user.is_anonymous ? GUEST_LIMIT : MEMBER_LIMIT;
-  const { data: reservationData, error: reservationError } = await auth.admin.rpc(
-    'reserve_briefing_usage',
-    { p_user_id: auth.user.id, p_limit: usageLimit }
-  );
-  if (reservationError) {
-    console.error('Could not reserve briefing usage:', reservationError);
+  let reservation: unknown;
+  try {
+    const { rows } = await getDatabasePool().query(
+      'SELECT allowed, used_count, remaining FROM public.reserve_briefing_usage($1, $2)',
+      [auth.user.id, usageLimit]
+    );
+    reservation = rows[0];
+  } catch (error) {
+    console.error('Could not reserve briefing usage:', error);
     return response(500, { error: 'Could not verify usage. Please try again.' });
   }
 
-  const reservation = Array.isArray(reservationData) ? reservationData[0] : reservationData;
   if (!reservation || typeof reservation !== 'object') {
     return response(500, { error: 'Could not verify usage. Please try again.' });
   }
@@ -184,16 +207,20 @@ export const handler = async (event: NetlifyEvent) => {
     );
 
     if (!auth.user.is_anonymous) {
-      const { error } = await auth.admin.from('briefings').insert({
-        user_id: auth.user.id,
-        target_name: meta.target,
-        meeting_type: meta.meetingType,
-        meeting_description: meta.meetingDescription ?? null,
-        meeting_at: meta.meetingAt.toISOString(),
-        model: meta.model,
-        briefing,
-      });
-      if (error) throw new Error(`Briefing could not be saved: ${error.message}`);
+      await getDatabasePool().query(
+        `INSERT INTO public.briefings (
+          user_id, target_name, meeting_type, meeting_description, meeting_at, model, briefing
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)`,
+        [
+          auth.user.id,
+          meta.target,
+          meta.meetingType,
+          meta.meetingDescription ?? null,
+          meta.meetingAt.toISOString(),
+          meta.model,
+          JSON.stringify(briefing),
+        ]
+      );
     }
 
     const usage: Usage = {
@@ -204,10 +231,11 @@ export const handler = async (event: NetlifyEvent) => {
     return response(200, { briefing, usage });
   } catch (error) {
     const { description } = describeGenerationError(error);
-    const { error: releaseError } = await auth.admin.rpc('release_briefing_usage', {
-      p_user_id: auth.user.id,
-    });
-    if (releaseError) console.error('Could not release failed briefing usage:', releaseError);
+    try {
+      await getDatabasePool().query('SELECT public.release_briefing_usage($1)', [auth.user.id]);
+    } catch (releaseError) {
+      console.error('Could not release failed briefing usage:', releaseError);
+    }
     const statusCode = error instanceof Error && error.message.startsWith('Missing server-side') ? 500 : 502;
     console.error('Briefing generation failed:', error);
     return response(statusCode, { error: statusCode === 500 ? 'The service is not configured correctly.' : description });
