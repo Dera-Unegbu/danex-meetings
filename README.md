@@ -77,11 +77,12 @@ Set these variables in the Netlify site dashboard. Keep Tavily and Bifrost keys 
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+DATABASE_URL=your_supabase_transaction_pooler_url
 TAVILY_API_KEY=your_tavily_api_key
 BIFROST_API_KEY=your_bifrost_api_key
 ```
 
-The Supabase URL and anon/publishable key are used by the browser for Auth. Keep the Supabase service-role key, Tavily key, and Bifrost key server-only in Netlify.
+Use the Supabase transaction pooler connection string for `DATABASE_URL`; the Netlify function uses it for PostgreSQL reads and writes. The Supabase URL and anon/publishable key are used by the browser for Auth, while `SUPABASE_SERVICE_ROLE_KEY` is used server-side to validate Auth tokens. Keep the service-role key, database URL, Tavily key, and Bifrost key server-only in Netlify.
 
 4. Configure Supabase
 - Apply every SQL migration in `supabase/migrations` in timestamp order.
